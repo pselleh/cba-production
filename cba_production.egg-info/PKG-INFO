@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: cba-production
+Version: 0.1.0
+Summary: CBA production configuration plugin
+Requires-Python: >=3.8

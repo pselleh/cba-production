@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cba-production"
+version = "0.1.0"
+description = "CBA production configuration plugin"
+requires-python = ">=3.8"
+
+[project.entry-points."tutor.plugin.v1"]
+cba-production = "cba_production.plugin"
