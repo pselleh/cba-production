@@ -1,4 +1,5 @@
 from tutor import hooks
+from . import security  # load security early
 
 # LMS production settings
 hooks.Filters.ENV_PATCHES.add_item((
