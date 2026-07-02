@@ -1,15 +1,27 @@
 from tutor import hooks
-from . import security  # load security early
+from . import security
 
-# LMS production settings
+#
+# LMS Production Settings
+#
 hooks.Filters.ENV_PATCHES.add_item((
     "openedx-lms-common-settings",
     """
 DEBUG = False
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+SESSION_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SAMESITE = "None"
 """
 ))
 
-# CMS production settings
+#
+# CMS Production Settings
+#
 hooks.Filters.ENV_PATCHES.add_item((
     "openedx-cms-common-settings",
     """
