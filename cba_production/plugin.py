@@ -47,7 +47,18 @@ LOGIN_REDIRECT_WHITELIST = list(dict.fromkeys(
         "www.centerforbusinessacceleration.com",
     ]
 ))
+
+RECAPTCHA_PROJECT_ID = "{{{{ CBA_RECAPTCHA_PROJECT_ID }}}}"
+RECAPTCHA_PRIVATE_KEY = "{{{{ CBA_RECAPTCHA_API_KEY }}}}"
+
+RECAPTCHA_SITE_KEYS = {{
+    "web": "{{{{ CBA_RECAPTCHA_WEB_SITE_KEY }}}}",
+    "ios": None,
+    "android": None,
+}}
+
 """
+
 ))
 
 #
