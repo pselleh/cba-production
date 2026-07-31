@@ -4,9 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cba-production"
-version = "0.1.0"
-description = "CBA production configuration plugin"
+version = "0.2.0"
+description = "CBA production Tutor plugin and Open edX Django App Plugin"
 requires-python = ">=3.8"
+dependencies = [
+    "requests>=2.31,<3",
+]
 
 [project.entry-points."tutor.plugin.v1"]
 cba-production = "cba_production.plugin"
+
+[project.entry-points."lms.djangoapp"]
+cba-recaptcha = "cba_production.recaptcha.apps:CbaRecaptchaConfig"
+
+[tool.setuptools.packages.find]
+include = ["cba_production*"]

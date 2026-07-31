@@ -1,14 +1,20 @@
 from tutor import hooks
+
 from . import security
+
+hooks.Filters.MOUNTED_DIRECTORIES.add_item(
+    (
+        "openedx",
+        r"^cba-production$",
+    )
+)
 
 CBA_COOKIE_DOMAIN = ".centerforbusinessacceleration.com"
 
-#
-# LMS Production Settings
-#
-hooks.Filters.ENV_PATCHES.add_item((
-    "openedx-lms-common-settings",
-    f"""
+hooks.Filters.ENV_PATCHES.add_item(
+    (
+        "openedx-lms-common-settings",
+        f"""
 DEBUG = False
 
 SESSION_COOKIE_DOMAIN = "{CBA_COOKIE_DOMAIN}"
@@ -57,16 +63,35 @@ RECAPTCHA_SITE_KEYS = {{
     "android": None,
 }}
 
-"""
+CBA_RECAPTCHA_ENABLED = {{{{ CBA_RECAPTCHA_ENABLED }}}}
+CBA_RECAPTCHA_SCORE_THRESHOLD = float(
+    "{{{{ CBA_RECAPTCHA_SCORE_THRESHOLD }}}}"
+)
+CBA_RECAPTCHA_EXPECTED_ACTION = (
+    "{{{{ CBA_RECAPTCHA_EXPECTED_ACTION }}}}"
+)
+CBA_RECAPTCHA_HTTP_TIMEOUT = float(
+    "{{{{ CBA_RECAPTCHA_HTTP_TIMEOUT }}}}"
+)
+CBA_RECAPTCHA_FAIL_CLOSED = {{{{ CBA_RECAPTCHA_FAIL_CLOSED }}}}
 
-))
+CBA_RECAPTCHA_PROTECTED_PATHS = (
+    "/login_ajax",
+    "/login_ajax/",
+    "/api/user/v1/account/login",
+    "/api/user/v1/account/login/",
+    "/api/user/v2/account/login_session",
+    "/api/user/v2/account/login_session/",
+)
+""",
+    )
+)
 
-#
-# CMS Production Settings
-#
-hooks.Filters.ENV_PATCHES.add_item((
-    "openedx-cms-common-settings",
-    f"""
+
+hooks.Filters.ENV_PATCHES.add_item(
+    (
+        "openedx-cms-common-settings",
+        f"""
 DEBUG = False
 
 SESSION_COOKIE_DOMAIN = "{CBA_COOKIE_DOMAIN}"
@@ -76,5 +101,6 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-"""
-))
+""",
+    )
+)
