@@ -63,20 +63,6 @@ RECAPTCHA_SITE_KEYS = {{
     "android": None,
 }}
 
-INSTALLED_APPS = list(globals().get("INSTALLED_APPS", []))
-if "cba_production.recaptcha" not in INSTALLED_APPS:
-    INSTALLED_APPS.append("cba_production.recaptcha")
-
-MIDDLEWARE = list(globals().get("MIDDLEWARE", []))
-if (
-    "cba_production.recaptcha.middleware.RecaptchaEnterpriseMiddleware"
-    not in MIDDLEWARE
-):
-    MIDDLEWARE.insert(
-        0,
-        "cba_production.recaptcha.middleware.RecaptchaEnterpriseMiddleware",
-    )
-
 CBA_RECAPTCHA_ENABLED = {{{{ CBA_RECAPTCHA_ENABLED }}}}
 CBA_RECAPTCHA_SCORE_THRESHOLD = float(
     "{{{{ CBA_RECAPTCHA_SCORE_THRESHOLD }}}}"
