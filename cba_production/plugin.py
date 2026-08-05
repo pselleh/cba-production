@@ -104,3 +104,37 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 """,
     )
 )
+
+hooks.Filters.ENV_PATCHES.add_item(
+    (
+        "openedx-lms-production-settings",
+        """
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "UserAttributeSimilarityValidator"
+        ),
+    },
+    {
+        "NAME": (
+            "common.djangoapps.util.password_policy_validators."
+            "MinimumLengthValidator"
+        ),
+        "OPTIONS": {
+            "min_length": 10,
+        },
+    },
+    {
+        "NAME": (
+            "common.djangoapps.util.password_policy_validators."
+            "MaximumLengthValidator"
+        ),
+        "OPTIONS": {
+            "max_length": 75,
+        },
+    },
+]
+""",
+    )
+)
