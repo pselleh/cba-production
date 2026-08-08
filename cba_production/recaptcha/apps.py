@@ -27,3 +27,13 @@ class CbaRecaptchaConfig(AppConfig):
             },
         },
     }
+
+    def ready(self):
+        """
+        Apply CBA runtime patches after Django starts.
+        """
+        from cba_production.registration_patch import (
+            apply_registration_patch,
+        )
+
+        apply_registration_patch()

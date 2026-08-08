@@ -122,7 +122,7 @@ AUTH_PASSWORD_VALIDATORS = [
             "MinimumLengthValidator"
         ),
         "OPTIONS": {
-            "min_length": 10,
+            "min_length": 15,
         },
     },
     {
@@ -135,6 +135,25 @@ AUTH_PASSWORD_VALIDATORS = [
         },
     },
 ]
+FEATURES["ENABLE_DYNAMIC_REGISTRATION_FIELDS"] = True
+
+# CBA compromised-password policy.
+FEATURES["ENABLE_AUTHN_REGISTER_HIBP_POLICY"] = True
+FEATURES["ENABLE_AUTHN_RESET_PASSWORD_HIBP_POLICY"] = True
+FEATURES["ENABLE_AUTHN_LOGIN_NUDGE_HIBP_POLICY"] = True
+
+# Enable only after measuring production impact.
+FEATURES["ENABLE_AUTHN_LOGIN_BLOCK_HIBP_POLICY"] = False
+
+MFE_CONFIG["ENABLE_DYNAMIC_REGISTRATION_FIELDS"] = True
+
+REGISTRATION_EXTENSION_FORM = (
+    "cba_production.registration_forms.CBARegistrationExtensionForm"
+)
+
+REGISTRATION_EXTRA_FIELDS["first_name"] = "required"
+REGISTRATION_EXTRA_FIELDS["last_name"] = "required"
+REGISTRATION_EXTRA_FIELDS["name"] = "hidden"
 """,
     )
 )
