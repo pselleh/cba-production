@@ -21,7 +21,7 @@ class CBARegistrationExtensionForm(forms.Form):
     """
 
     organization_code = forms.CharField(
-        required=True,
+        required=False,
         min_length=2,
         max_length=64,
         label=_("Organization Code"),
@@ -39,7 +39,10 @@ class CBARegistrationExtensionForm(forms.Form):
         """
         Normalize and validate the organization code server-side.
         """
-        value = self.cleaned_data["organization_code"].strip()
+        value = self.cleaned_data.get("organization_code", "").strip()
+
+        if not value:
+            return ""
 
         if not ORGANIZATION_CODE_PATTERN.fullmatch(value):
             raise ValidationError(
