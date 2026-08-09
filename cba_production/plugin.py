@@ -155,6 +155,7 @@ REGISTRATION_EXTENSION_FORM = (
 REGISTRATION_EXTRA_FIELDS["first_name"] = "required"
 REGISTRATION_EXTRA_FIELDS["last_name"] = "required"
 REGISTRATION_EXTRA_FIELDS["name"] = "hidden"
+REGISTRATION_EXTRA_FIELDS["country"] = "optional"
 """,
     )
 )
