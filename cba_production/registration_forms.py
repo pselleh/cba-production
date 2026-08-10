@@ -11,6 +11,8 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from orgcode_enterprise.models import EnterpriseLearnerProfile
+
 
 ORGANIZATION_CODE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{1,63}$")
 
@@ -53,3 +55,22 @@ class CBARegistrationExtensionForm(forms.Form):
             )
 
         return value
+
+    def save(self, commit=False):
+        """
+        Build the enterprise profile for the newly registered user.
+
+        Open edX calls registration extension forms with commit=False,
+        assigns the newly created user, and then saves the returned model.
+        """
+        if commit:
+            raise ValueError(
+                "CBARegistrationExtensionForm requires commit=False"
+            )
+
+        return EnterpriseLearnerProfile(
+            organization_code=self.cleaned_data.get(
+                "organization_code",
+                "",
+            )
+        )

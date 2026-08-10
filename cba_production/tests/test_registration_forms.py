@@ -42,6 +42,48 @@ class CBARegistrationExtensionFormTest(SimpleTestCase):
             "CBA-2026",
         )
 
+    def test_save_returns_unsaved_enterprise_profile(self):
+        form = CBARegistrationExtensionForm(
+            data={"organization_code": "CBA-2026_test.01"}
+        )
+
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+
+        profile = form.save(commit=False)
+
+        self.assertEqual(
+            profile.organization_code,
+            "CBA-2026_test.01",
+        )
+        self.assertIsNone(profile.user_id)
+        self.assertIsNone(profile.pk)
+
+    def test_save_preserves_blank_organization_code(self):
+        form = CBARegistrationExtensionForm(
+            data={"organization_code": ""}
+        )
+
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+
+        profile = form.save(commit=False)
+
+        self.assertEqual(profile.organization_code, "")
+        self.assertIsNone(profile.user_id)
+        self.assertIsNone(profile.pk)
+
+    def test_save_rejects_commit_true(self):
+        form = CBARegistrationExtensionForm(
+            data={"organization_code": "CBA-2026"}
+        )
+
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "requires commit=False",
+        ):
+            form.save(commit=True)
+
     def test_invalid_organization_code_is_rejected(self):
         form = CBARegistrationExtensionForm(
             data={"organization_code": "CBA CODE!"}
