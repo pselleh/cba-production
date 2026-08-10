@@ -3,7 +3,15 @@ import logging
 from json import JSONDecodeError
 
 from django.conf import settings
+from django.contrib.auth import logout
 from django.http import JsonResponse
+
+from openedx.core.djangoapps.safe_sessions.middleware import (
+    mark_user_change_as_expected,
+)
+from openedx.core.djangoapps.user_authn.cookies import (
+    delete_logged_in_cookies,
+)
 
 from .assessment import create_assessment
 from .exceptions import (
@@ -26,15 +34,12 @@ class RecaptchaEnterpriseMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        logger.warning(
-            "CBA DEBUG 1: method=%s path=%s content_type=%s",
-            request.method,
-            request.path,
-            request.content_type,
-        )
-
         if not self._should_protect(request):
-            return self.get_response(request)
+            response = self.get_response(request)
+            return self._enforce_registration_verification_boundary(
+                request,
+                response,
+            )
 
         token, submitted_action = self._extract_recaptcha_fields(request)
 
@@ -98,7 +103,74 @@ class RecaptchaEnterpriseMiddleware:
             return self._service_failure_response()
 
         # Assessment passed. Continue to the unmodified Open edX login view.
-        return self.get_response(request)
+        response = self.get_response(request)
+        return self._enforce_registration_verification_boundary(
+            request,
+            response,
+        )
+
+    @staticmethod
+    def _enforce_registration_verification_boundary(request, response):
+        """
+        Do not leave a newly registered inactive learner authenticated.
+
+        Open edX intentionally authenticates a newly created inactive user
+        during registration and sets its login/JWT cookies. CBA requires
+        email verification before authenticated access, so terminate that
+        registration-created session after a successful registration.
+
+        This is deliberately limited to successful POST requests to the
+        registration endpoints. Normal login and other inactive-user flows
+        are not changed.
+        """
+        registration_paths = {
+            "/create_account",
+            "/api/user/v1/account/registration/",
+            "/api/user/v2/account/registration/",
+            "/user_api/v1/account/registration/",
+            "/user_api/v2/account/registration/",
+        }
+
+        if request.method.upper() != "POST":
+            return response
+
+        if request.path not in registration_paths:
+            return response
+
+        if response.status_code != 200:
+            return response
+
+        user = getattr(request, "user", None)
+        if (
+            user is None
+            or not getattr(user, "is_authenticated", False)
+            or getattr(user, "is_active", True)
+        ):
+            return response
+
+        user_id = getattr(user, "id", None)
+
+        logger.info(
+            "CBA registration verification boundary: "
+            "terminating registration-created session for user_id=%s",
+            user_id,
+        )
+
+        logout(request)
+        delete_logged_in_cookies(response)
+
+        # RegistrationView sets this cookie for Open edX's normal
+        # post-registration activation reminder. CBA does not permit the
+        # inactive learner to remain authenticated, so remove it as well.
+        response.delete_cookie(
+            settings.SHOW_ACTIVATE_CTA_POPUP_COOKIE_NAME,
+            path="/",
+            domain=settings.SESSION_COOKIE_DOMAIN,
+        )
+
+        mark_user_change_as_expected(None)
+
+        return response
 
     @staticmethod
     def _should_protect(request):
