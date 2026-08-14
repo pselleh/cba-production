@@ -82,7 +82,22 @@ CBA_RECAPTCHA_PROTECTED_PATHS = (
     "/api/user/v1/account/login/",
     "/api/user/v2/account/login_session",
     "/api/user/v2/account/login_session/",
+    "/account/password",
+    "/account/password/",
+    "/api/user/v2/account/registration/",
 )
+
+CBA_RECAPTCHA_ACTION_BY_PATH = {{
+    "/login_ajax": "LOGIN",
+    "/login_ajax/": "LOGIN",
+    "/api/user/v1/account/login": "LOGIN",
+    "/api/user/v1/account/login/": "LOGIN",
+    "/api/user/v2/account/login_session": "LOGIN",
+    "/api/user/v2/account/login_session/": "LOGIN",
+    "/account/password": "PASSWORD_RESET_REQUEST",
+    "/account/password/": "PASSWORD_RESET_REQUEST",
+    "/api/user/v2/account/registration/": "REGISTER",
+}}
 """,
     )
 )
@@ -138,6 +153,26 @@ AUTH_PASSWORD_VALIDATORS = [
 ENABLE_DYNAMIC_REGISTRATION_FIELDS = True
 FEATURES["ENABLE_DYNAMIC_REGISTRATION_FIELDS"] = True
 
+# Interactive registration field validation.
+#
+# Open edX upstream defaults REGISTRATION_VALIDATION_RATELIMIT
+# to a very restrictive multi-day limit. CBA protects actual
+# account creation separately with reCAPTCHA Enterprise, so
+# field validation retains rate limiting without interfering
+# with legitimate registration flows or shared NAT addresses.
+REGISTRATION_VALIDATION_RATELIMIT = "60/minute"
+
+# CBA authentication abuse controls.
+ENABLE_MAX_FAILED_LOGIN_ATTEMPTS = True
+MAX_FAILED_LOGIN_ATTEMPTS_ALLOWED = 3
+MAX_FAILED_LOGIN_ATTEMPTS_LOCKOUT_PERIOD_SECS = 1800
+
+# Password-reset links are intentionally short-lived.
+PASSWORD_RESET_TIMEOUT = 900
+
+# Do not disclose password-reset failure/account state by email.
+ENABLE_PASSWORD_RESET_FAILURE_EMAIL = False
+
 # CBA compromised-password policy.
 FEATURES["ENABLE_AUTHN_REGISTER_HIBP_POLICY"] = True
 FEATURES["ENABLE_AUTHN_RESET_PASSWORD_HIBP_POLICY"] = True
@@ -156,6 +191,20 @@ REGISTRATION_EXTRA_FIELDS["first_name"] = "required"
 REGISTRATION_EXTRA_FIELDS["last_name"] = "required"
 REGISTRATION_EXTRA_FIELDS["name"] = "hidden"
 REGISTRATION_EXTRA_FIELDS["country"] = "optional"
+REGISTRATION_EXTRA_FIELDS["terms_of_service"] = "required"
+MFE_CONFIG["TOS_LINK"] = 'https://centerforbusinessacceleration.com/contact/'
+MFE_CONFIG["PASSWORD_RESET_SUPPORT_LINK"] = 'https://centerforbusinessacceleration.com/contact/'
+MFE_CONFIG["LOGIN_ISSUE_SUPPORT_LINK"] = 'https://centerforbusinessacceleration.com/contact/'
+
+# CBA ACE/Django email template overrides.
+_CBA_TEMPLATE_DIR = "/mnt/cba-production/cba_production/templates"
+for _template_engine in TEMPLATES:
+    if (
+        _template_engine.get("BACKEND")
+        == "django.template.backends.django.DjangoTemplates"
+        and _CBA_TEMPLATE_DIR not in _template_engine["DIRS"]
+    ):
+        _template_engine["DIRS"].insert(0, _CBA_TEMPLATE_DIR)
 """,
     )
 )

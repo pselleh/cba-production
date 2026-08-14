@@ -43,8 +43,21 @@ class RecaptchaEnterpriseMiddleware:
 
         token, submitted_action = self._extract_recaptcha_fields(request)
 
+        action_by_path = getattr(
+            settings,
+            "CBA_RECAPTCHA_ACTION_BY_PATH",
+            {},
+        )
+
         expected_action = str(
-            getattr(settings, "CBA_RECAPTCHA_EXPECTED_ACTION", "LOGIN")
+            action_by_path.get(
+                request.path,
+                getattr(
+                    settings,
+                    "CBA_RECAPTCHA_EXPECTED_ACTION",
+                    "LOGIN",
+                ),
+            )
         )
 
         if not token:
@@ -80,7 +93,10 @@ class RecaptchaEnterpriseMiddleware:
                 reason="INVALID_TOKEN",
             )
         except RecaptchaActionMismatch:
-            logger.warning("reCAPTCHA token action did not match LOGIN")
+            logger.warning(
+                "reCAPTCHA token action did not match expected action %s",
+                expected_action,
+            )
             return self._error_response(
                 status=400,
                 error_code="recaptcha-action-invalid",

@@ -1,0 +1,12 @@
+{% autoescape off %}
+You're almost there! Click on “Activate your account” to access Center for Business Acceleration. Note that you will not be able to log into your account until you have activated it.
+
+Activate your account:
+{{ confirm_activation_link }}
+
+Enjoy learning with Center for Business Acceleration.
+
+If you need help, please use our web form https://centerforbusinessacceleration.com/contact/
+
+This email message was automatically sent by Center for Business Acceleration because someone attempted to create an account on Center for Business Acceleration using this email address.
+{% endautoescape %}

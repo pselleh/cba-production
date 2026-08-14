@@ -1,0 +1,1 @@
+{% autoescape off %}Activate your {{ platform_name }} account{% endautoescape %}
