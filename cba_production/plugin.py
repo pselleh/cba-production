@@ -164,8 +164,16 @@ REGISTRATION_VALIDATION_RATELIMIT = "60/minute"
 
 # CBA authentication abuse controls.
 ENABLE_MAX_FAILED_LOGIN_ATTEMPTS = True
-MAX_FAILED_LOGIN_ATTEMPTS_ALLOWED = 3
+MAX_FAILED_LOGIN_ATTEMPTS_ALLOWED = 10
 MAX_FAILED_LOGIN_ATTEMPTS_LOCKOUT_PERIOD_SECS = 1800
+
+# Layered login throttling using Open edX native rate limiters.
+#
+# Per-account throttling limits credential guessing against a
+# specific learner account. Per-IP throttling limits distributed
+# attempts originating from the same client/network.
+LOGISTRATION_PER_EMAIL_RATELIMIT_RATE = "10/5m"
+LOGISTRATION_RATELIMIT_RATE = "50/5m"
 
 # Password-reset links are intentionally short-lived.
 PASSWORD_RESET_TIMEOUT = 900
@@ -174,12 +182,12 @@ PASSWORD_RESET_TIMEOUT = 900
 ENABLE_PASSWORD_RESET_FAILURE_EMAIL = False
 
 # CBA compromised-password policy.
-FEATURES["ENABLE_AUTHN_REGISTER_HIBP_POLICY"] = True
-FEATURES["ENABLE_AUTHN_RESET_PASSWORD_HIBP_POLICY"] = True
-FEATURES["ENABLE_AUTHN_LOGIN_NUDGE_HIBP_POLICY"] = True
+ENABLE_AUTHN_REGISTER_HIBP_POLICY = True
+ENABLE_AUTHN_RESET_PASSWORD_HIBP_POLICY = True
+ENABLE_AUTHN_LOGIN_NUDGE_HIBP_POLICY = True
 
-# Enable only after measuring production impact.
-FEATURES["ENABLE_AUTHN_LOGIN_BLOCK_HIBP_POLICY"] = False
+# Block login when the submitted password is known to be compromised.
+ENABLE_AUTHN_LOGIN_BLOCK_HIBP_POLICY = True
 
 MFE_CONFIG["ENABLE_DYNAMIC_REGISTRATION_FIELDS"] = True
 
