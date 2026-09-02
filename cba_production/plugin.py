@@ -199,6 +199,7 @@ REGISTRATION_EXTRA_FIELDS["first_name"] = "required"
 REGISTRATION_EXTRA_FIELDS["last_name"] = "required"
 REGISTRATION_EXTRA_FIELDS["name"] = "hidden"
 REGISTRATION_EXTRA_FIELDS["country"] = "optional"
+REGISTRATION_EXTRA_FIELDS["honor_code"] = "hidden"
 REGISTRATION_EXTRA_FIELDS["terms_of_service"] = "required"
 MFE_CONFIG["TOS_LINK"] = 'https://centerforbusinessacceleration.com/contact/'
 MFE_CONFIG["PASSWORD_RESET_SUPPORT_LINK"] = 'https://centerforbusinessacceleration.com/contact/'
