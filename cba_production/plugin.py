@@ -217,3 +217,71 @@ for _template_engine in TEMPLATES:
 """,
     )
 )
+
+# Credentials MySQL startup readiness
+#
+# Docker may restore Credentials before MySQL is accepting TCP connections
+# after a host/Docker reboot. Keep the container alive until MySQL is ready,
+# then exec the upstream Credentials 22.0.0 uWSGI command unchanged.
+hooks.Filters.ENV_PATCHES.add_item(
+    (
+        "local-docker-compose-prod-services",
+        """
+credentials:
+  command:
+    - /openedx/venv/bin/python
+    - -c
+    - |
+        import os
+        import socket
+        import sys
+        import time
+
+        host = "mysql"
+        port = 3306
+
+        for attempt in range(1, 61):
+            try:
+                with socket.create_connection((host, port), timeout=2):
+                    print(
+                        f"Credentials MySQL is ready (attempt {attempt}).",
+                        flush=True,
+                    )
+                    break
+            except OSError as exc:
+                if attempt == 60:
+                    print(
+                        f"Credentials MySQL unavailable after 60 attempts: {exc}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    raise
+
+                print(
+                    f"Waiting for Credentials MySQL ({attempt}/60): {exc}",
+                    flush=True,
+                )
+                time.sleep(2)
+
+        os.execvp(
+            "uwsgi",
+            [
+                "uwsgi",
+                "--static-map",
+                "/static=/openedx/credentials/credentials/assets",
+                "--static-map",
+                "/media=/openedx/credentials/credentials/media",
+                "--http",
+                "0.0.0.0:8000",
+                "--thunder-lock",
+                "--single-interpreter",
+                "--enable-threads",
+                "--processes=2",
+                "--buffer-size=8192",
+                "--wsgi-file",
+                "credentials/wsgi.py",
+            ],
+        )
+""",
+    )
+)
