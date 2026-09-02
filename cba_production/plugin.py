@@ -217,3 +217,68 @@ for _template_engine in TEMPLATES:
 """,
     )
 )
+
+# Credentials startup readiness
+#
+# Docker may restart Credentials before MySQL is actually accepting
+# connections after a host/Docker reboot. Wait for a real Django database
+# connection before handing control to the image's normal CMD.
+hooks.Filters.ENV_PATCHES.add_item(
+    (
+        "local-docker-compose-prod-services",
+        """
+credentials:
+  entrypoint:
+    - bash
+    - -euc
+    - |
+        /openedx/venv/bin/python - <<'PY'
+        import os
+        import sys
+        import time
+
+        os.environ.setdefault(
+            "DJANGO_SETTINGS_MODULE",
+            "credentials.settings.tutor.production",
+        )
+
+        import django
+        django.setup()
+
+        from django.db import connection
+
+        for attempt in range(1, 61):
+            try:
+                connection.ensure_connection()
+                print(
+                    f"Credentials database is ready (attempt {attempt}).",
+                    flush=True,
+                )
+                connection.close()
+                break
+            except Exception as exc:
+                connection.close()
+
+                if attempt == 60:
+                    print(
+                        f"Credentials database unavailable after "
+                        f"120 seconds: {exc}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    raise
+
+                print(
+                    f"Waiting for Credentials database "
+                    f"({attempt}/60): {exc}",
+                    flush=True,
+                )
+                time.sleep(2)
+        PY
+
+        exec "$@"
+    - --
+""",
+    )
+)
+
