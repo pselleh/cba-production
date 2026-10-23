@@ -24,3 +24,6 @@ cba-learning-credits = "cba_production.learning_credits.apps:LearningCreditsConf
 
 [tool.setuptools.packages.find]
 include = ["cba_production*"]
+
+[tool.setuptools.package-data]
+"cba_production.learning_credits" = ["templates/**/*.html"]

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My learning credits</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem auto;
+           max-width: 75rem; padding: 0 1rem; color: #172333; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: .8rem; text-align: left;
+             border-bottom: 1px solid #ccd3dc; }
+    th { background: #eef2f6; }
+    .table-wrap { overflow-x: auto; }
+    nav { margin-top: 1.5rem; }
+    a { color: #174b86; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>My learning credits</h1>
+  <p>Awarded PDU and CEU credits for completed course requirements.</p>
+  {% if record.results %}
+  <div class="table-wrap">
+    <table>
+      <caption>Awarded learning credits</caption>
+      <thead>
+        <tr>
+          <th scope="col">Course identifier</th>
+          <th scope="col">Eligible minutes</th>
+          <th scope="col">PDU</th>
+          <th scope="col">CEU</th>
+          <th scope="col">Verified at</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for award in record.results %}
+        <tr>
+          <td>{{ award.course_key }}</td>
+          <td>{{ award.eligible_minutes }}</td>
+          <td>{{ award.pdu }}</td>
+          <td>{{ award.ceu }}</td>
+          <td>{{ award.verified_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p>No learning credits have been awarded yet.</p>
+  {% endif %}
+  <nav aria-label="Credit record pages">
+    {% if record.previous_page %}
+      <a href="?page={{ record.previous_page }}">Previous page</a>
+    {% endif %}
+    <span>Page {{ record.page }} of {{ record.pages }}</span>
+    {% if record.next_page %}
+      <a href="?page={{ record.next_page }}">Next page</a>
+    {% endif %}
+  </nav>
+</main>
+</body>
+</html>
