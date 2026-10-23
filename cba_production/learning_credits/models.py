@@ -10,6 +10,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from .activity_requirements import validate_activity_requirements
+
 from .calculations import (
     ACTIVITY_CATEGORIES,
     CREDIT_POLICY_VERSION,
@@ -37,6 +39,7 @@ class CourseCreditPlan(models.Model):
     instructional_design_reference = models.CharField(max_length=1024, blank=True)
     learning_outcomes = models.JSONField(default=list, blank=True)
     required_block_keys = models.JSONField(default=list, blank=True)
+    activity_requirements = models.JSONField(default=list, blank=True)
     policy_version = models.CharField(
         max_length=64, default=CREDIT_POLICY_VERSION,
     )
@@ -81,6 +84,7 @@ class CourseCreditPlan(models.Model):
             "policy_version": self.policy_version,
             "activity_minutes": deepcopy(self.activity_minutes),
             "required_block_keys": deepcopy(self.required_block_keys),
+            "activity_requirements": deepcopy(self.activity_requirements),
             "instructional_design_reference": self.instructional_design_reference,
             "learning_outcomes": deepcopy(self.learning_outcomes),
             "approved_by_id": self.approved_by_id,
@@ -113,6 +117,17 @@ class CourseCreditPlan(models.Model):
             raise ValidationError({
                 "required_block_keys": "Duplicate required blocks are not allowed.",
             })
+
+        try:
+            validate_activity_requirements(
+                self.activity_requirements,
+                self.course_key,
+                self.required_block_keys,
+            )
+        except ValueError as exc:
+            raise ValidationError({
+                "activity_requirements": str(exc),
+            }) from exc
 
         if self.status == self.Status.APPROVED:
             errors = {}
