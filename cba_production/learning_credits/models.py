@@ -9,6 +9,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 from .activity_requirements import validate_activity_requirements
 
@@ -292,3 +293,49 @@ class CourseCreditPlanBinding(models.Model):
             )
         self.full_clean()
         return super().save(*args, **kwargs)
+
+
+class CreditProcessingRequest(models.Model):
+    class Action(models.TextChoices):
+        BIND = "bind", "Bind plan"
+        CHECK = "check", "Check award"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        DONE = "done", "Done"
+        FAILED = "failed", "Failed"
+
+    learner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="cba_credit_processing_requests",
+    )
+    plan = models.ForeignKey(
+        CourseCreditPlan,
+        on_delete=models.PROTECT,
+        related_name="processing_requests",
+    )
+    course_key = models.CharField(max_length=255)
+    action = models.CharField(max_length=16, choices=Action.choices)
+    status = models.CharField(
+        max_length=16, choices=Status.choices,
+        default=Status.PENDING, db_index=True,
+    )
+    source_event_id = models.CharField(max_length=255)
+    attempts = models.PositiveIntegerField(default=0)
+    last_error = models.TextField(blank=True)
+    next_attempt_at = models.DateTimeField(
+        default=timezone.now, db_index=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "source_event_id", "action", "learner", "course_key",
+                ],
+                name="cba_unique_credit_event_request",
+            ),
+        ]
