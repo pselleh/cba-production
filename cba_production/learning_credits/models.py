@@ -208,6 +208,7 @@ class CourseCreditAward(models.Model):
     )
     policy_version = models.CharField(max_length=64)
     plan_snapshot = models.JSONField()
+    activity_evidence = models.JSONField(default=list, blank=True)
     source_event_id = models.CharField(max_length=255, blank=True)
 
     class Meta:

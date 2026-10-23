@@ -130,3 +130,20 @@ class CreditAwardServiceTests(TestCase):
                         learner=self.learner, plan_id=plan.pk,
                     )
         self.assertFalse(CourseCreditAward.objects.exists())
+
+    def test_activity_evidence_is_saved_with_award(self):
+        evidence = [{
+            "provider": "openassessment",
+            "block_key": self.plan.required_block_keys[0],
+            "submission_id": 12,
+            "points_earned": 8,
+            "points_possible": 10,
+        }]
+        with patch(
+            "cba_production.learning_credits.awards.collect_activity_evidence",
+            return_value=evidence,
+        ):
+            award, created = self.award()
+        self.assertTrue(created)
+        award.refresh_from_db()
+        self.assertEqual(award.activity_evidence, evidence)

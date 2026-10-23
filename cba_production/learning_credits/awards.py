@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from .activity_evidence import collect_activity_evidence
 from .completion import missing_required_blocks
 from .grades import currently_passing
 from .models import CourseCreditAward, CourseCreditPlan
@@ -40,15 +41,6 @@ def award_course_credits(*, learner, plan_id, source_event_id=""):
 
         snapshot = plan.snapshot
 
-        if any(
-            plan.activity_minutes[category] != 0
-            for category in ("assignments", "discussions", "other")
-        ):
-            raise ValidationError(
-                "Activity-specific evidence verification is required "
-                "for assignments, discussions, and other activities."
-            )
-
         if not currently_passing(
             learner=stored_learner, course_key=plan.course_key
         ):
@@ -65,6 +57,9 @@ def award_course_credits(*, learner, plan_id, source_event_id=""):
                 ],
             })
 
+        activity_evidence = collect_activity_evidence(
+            learner=stored_learner, plan=plan,
+        )
         totals = plan.credit_totals
         award = CourseCreditAward.objects.create(
             learner=stored_learner,
@@ -76,6 +71,7 @@ def award_course_credits(*, learner, plan_id, source_event_id=""):
             ceu=totals.ceu,
             policy_version=plan.policy_version,
             plan_snapshot=snapshot,
+            activity_evidence=activity_evidence,
             source_event_id=source_event_id,
         )
         return award, True
