@@ -7,6 +7,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 
 from .models import CourseCreditPlan
+from .activity_requirements import validate_evidence_coverage
 
 
 APPROVAL_PERMISSION = "cba_learning_credits.approve_course_credit_plan"
@@ -33,6 +34,11 @@ def approve_credit_plan(*, plan_id, approver):
 
         if plan.status == CourseCreditPlan.Status.APPROVED:
             return plan
+
+        try:
+            validate_evidence_coverage(plan)
+        except (InvalidKeyError, ValueError, TypeError) as exc:
+            raise ValidationError(str(exc)) from exc
 
         plan.status = CourseCreditPlan.Status.APPROVED
         plan.approved_by = approver

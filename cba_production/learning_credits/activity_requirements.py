@@ -75,3 +75,20 @@ def validate_activity_requirements(rules, course_key, required_block_keys):
                 raise ValueError("Discussion counts must be nonnegative integers.")
             if sum(counts) == 0:
                 raise ValueError("Require at least one discussion contribution.")
+
+
+def validate_evidence_coverage(plan):
+    """Reject approval when required work has no supported verification rule."""
+    validate_activity_requirements(
+        plan.activity_requirements, plan.course_key, plan.required_block_keys,
+    )
+    if plan.activity_minutes["other"] not in (None, 0):
+        raise ValueError("Other activities need a defined evidence verifier before approval.")
+    categories = {rule["category"] for rule in plan.activity_requirements}
+    for category in ("assignments", "discussions"):
+        if plan.activity_minutes[category] not in (None, 0) and category not in categories:
+            raise ValueError(f"Add passing requirements for {category} before approval.")
+    covered = {rule["block_key"] for rule in plan.activity_requirements}
+    for value in plan.required_block_keys:
+        if UsageKey.from_string(value).block_type in {"openassessment", "discussion"} and value not in covered:
+            raise ValueError("Add an evidence requirement for each required assignment and discussion.")

@@ -13,6 +13,11 @@ class LearningCreditsConfig(AppConfig):
                 "regex": r"^cba/learning-credits/",
                 "relative_path": "urls",
             },
+            "cms.djangoapp": {
+                "namespace": "cba_learning_credits_studio",
+                "regex": r"^cba/learning-credits/",
+                "relative_path": "studio_urls",
+            },
         },
     }
 

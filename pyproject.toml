@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cba-production"
-version = "0.2.0"
+version = "0.3.0"
 description = "CBA production Tutor plugin and Open edX Django App Plugin"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "requests>=2.31,<3",
 ]
@@ -26,4 +26,4 @@ cba-learning-credits = "cba_production.learning_credits.apps:LearningCreditsConf
 include = ["cba_production*"]
 
 [tool.setuptools.package-data]
-"cba_production.learning_credits" = ["templates/**/*.html"]
+"cba_production.learning_credits" = ["templates/**/*.html", "static/**/*.js"]

@@ -1,0 +1,55 @@
+{% load static %}<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learning credits · {{ course_title }}</title>
+<style>
+body{font:1rem/1.5 system-ui,sans-serif;color:#172b3a;max-width:72rem;margin:2rem auto;padding:0 1.2rem;background:#f6f8fa}
+header,section,fieldset{background:white;border:1px solid #cdd6df;border-radius:8px;padding:1.2rem;margin-bottom:1.2rem}
+h1,h2{line-height:1.2}label,legend{font-weight:600}input,select,textarea{font:inherit;max-width:100%;padding:.45rem;box-sizing:border-box}
+input[type=number],input[type=text],textarea{display:block;width:100%;margin:.3rem 0}input[type=checkbox]{margin-right:.5rem}
+.helptext{display:block;color:#465e6f;font-size:.9rem}.errorlist{color:#a21818}.minutes{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem}
+button{font:inherit;background:#165c80;color:white;border:0;border-radius:5px;padding:.65rem 1rem;cursor:pointer}a{color:#155b80}
+.preview{display:flex;gap:2rem;flex-wrap:wrap}.preview strong{display:block;font-size:1.7rem}.rule{border-left:4px solid #b3cbd9}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:.6rem;border-bottom:1px solid #dde4ea}
+</style></head><body><main>
+<header><a href="/home/">Studio home</a><h1>Learning credits</h1><p>{{ course_title }}</p><p>{{ course_key }}</p>
+<p>Credits use eligible planned learning time: 60 minutes = 1 PDU and 0.1 CEU. Count each required activity once.</p></header>
+<section aria-label="Credit preview"><h2>Calculated preview</h2><div class="preview">
+<div>Eligible minutes<strong>{{ totals.eligible_minutes|default_if_none:"Pending" }}</strong></div>
+<div>PDU<strong>{{ totals.pdu|default_if_none:"Pending" }}</strong></div>
+<div>CEU<strong>{{ totals.ceu|default_if_none:"Pending" }}</strong></div></div>
+<p>Blank time remains unknown. These are planned credits; a learner receives an award only after verified completion.</p></section>
+{% if readonly %}
+<section><h2>Approved version {{ selected_plan.version }}</h2><p>This version is locked. Existing learners retain their assigned version.</p>
+<fieldset disabled><legend>Approved plan details</legend>{{ form.as_p }}
+{% for requirement in requirements %}<fieldset><legend>Activity requirement {{ forloop.counter }}</legend>{{ requirement.as_p }}</fieldset>{% endfor %}</fieldset>
+<a href="?copy={{ selected_plan.pk }}">Create a new draft version</a></section>
+{% else %}
+<form method="post">{% csrf_token %}
+{% if selected_plan.pk %}<input type="hidden" name="plan_id" value="{{ selected_plan.pk }}">{% endif %}
+{{ form.non_field_errors }}
+<fieldset><legend>Plan version and instructional design</legend>
+{{ form.version.as_field_group }}{{ form.instructional_design_reference.as_field_group }}{{ form.learning_outcomes.as_field_group }}</fieldset>
+<fieldset><legend>Eligible activity minutes</legend><div class="minutes">
+<div>{{ form.instruction_minutes.as_field_group }}</div><div>{{ form.assignments_minutes.as_field_group }}</div><div>{{ form.assessments_minutes.as_field_group }}</div>
+<div>{{ form.discussions_minutes.as_field_group }}</div><div>{{ form.other_minutes.as_field_group }}</div></div>
+<p>Other activity time can be saved in a draft. Approval requires a supported verification method for that work.</p></fieldset>
+<fieldset><legend>Required activities</legend>{{ form.required_block_keys.errors }}{{ form.required_block_keys }}
+<p>For quizzes, use the course grading policy and select the required problems. For open response assessments and discussions, define the additional requirements below.</p></fieldset>
+<fieldset><legend>Passing and participation requirements</legend>{{ requirements.management_form }}{{ requirements.non_form_errors }}
+<div id="requirement-rows">{% for requirement in requirements %}<fieldset class="rule"><legend>Activity requirement {{ forloop.counter }}</legend>{{ requirement.as_p }}</fieldset>{% endfor %}</div>
+<template id="empty-requirement"><fieldset class="rule"><legend>Activity requirement</legend>{{ requirements.empty_form.as_p }}</fieldset></template>
+<button type="button" id="add-requirement">Add activity requirement</button>
+<p>Enter passing percentages only for assignments or assessments. For discussions, enter original-post and direct-response counts, including explicit zeros. Responses must be to another learner's thread. Participation counts do not assess contribution quality.</p></fieldset>
+<button name="action" value="preview">Preview credits</button> <button name="action" value="save">Save draft</button>
+</form>{% endif %}
+<section><h2>Saved plan versions</h2><table><thead><tr><th>Version</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+{% for plan in plans %}<tr><td>{{ plan.version }}</td><td>{{ plan.get_status_display }}</td><td>
+<a href="?edit={{ plan.pk }}">{% if plan.status == 'approved' %}View{% else %}Edit draft{% endif %}</a> ·
+<a href="?copy={{ plan.pk }}">New version</a> ·
+<a href="{% url 'cba_learning_credits_studio:export' course_key=course_key plan_id=plan.pk %}">Export plan</a>
+{% if plan.status == 'draft' and can_approve %}
+<form method="post" action="{% url 'cba_learning_credits_studio:approve' course_key=course_key plan_id=plan.pk %}">{% csrf_token %}
+<button>Approve and lock this version</button></form>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="3">No saved credit plans yet.</td></tr>{% endfor %}</tbody></table>
+<p>Approval locks a plan. Enabling credits for new enrollments is a separate release step.</p></section>
+</main><script src="{% static 'cba_learning_credits/studio.js' %}" defer></script></body></html>

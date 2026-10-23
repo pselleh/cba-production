@@ -1,0 +1,6 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio learning credits</title></head><body><main>
+<a href="/home/">Studio home</a><h1>Studio learning credits</h1><p>Choose a course to review eligible time, preview PDU and CEU, and manage plan versions.</p>
+<ul>{% for course in courses %}<li><a href="{% url 'cba_learning_credits_studio:course' course_key=course.key %}">{{ course.title }}</a></li>
+{% empty %}<li>No courses are available for your author account yet. Import a draft course first.</li>{% endfor %}</ul>
+</main></body></html>

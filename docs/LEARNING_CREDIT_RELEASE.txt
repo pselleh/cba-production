@@ -1,0 +1,161 @@
+CBA LEARNING CREDIT AUTHORING AND IMPORT RELEASE
+
+Implementation status
+---------------------
+Studio-host controls are implemented at /cba/learning-credits/ with a course
+picker. Course authors can edit draft activity minutes, select required native
+activities, enter ORA passing percentages and discussion participation counts,
+preview PDU/CEU, save drafts, copy new versions, and export plans. Approval also
+requires the existing approve_course_credit_plan permission. Approved versions
+cannot be edited through these controls. No credits can be entered manually.
+
+Quiz passing continues to use the course's native grading policy. Participation
+counts are not a discussion quality grade. Other activity minutes can be drafted,
+but approval remains blocked until that work has a supported evidence verifier.
+
+Bulk imports never approve credit plans. Unknown activity allocations remain
+null. Total course duration is not automatically treated as instruction time.
+No Tutor authentication/security settings were changed. Event processing remains
+disabled unless CBA_LEARNING_CREDITS_EVENTS_ENABLED is explicitly configured.
+
+Local verification
+------------------
+The isolated Django 5.2.13 suite contains 150 tests: 148 pass on SQLite and two
+row-lock/concurrent-worker tests intentionally skip until run on MySQL. The
+catalog repository has 24 additional pure credit-contract/export tests passing.
+These do not prove the native Open edX integrations, Docker installation, or
+Discovery migrations on the production server. The browser screenshot check was
+unavailable; Django template rendering and form interactions are covered by tests.
+
+Run the server checks before deployment
+---------------------------------------
+From /home/cbaadmin/src/cba-learning-credits:
+
+    bash scripts/verify_credit_review.sh
+
+The MySQL check creates a temporary MySQL 8.4.11 container, isolated credentials,
+and a test database on loopback port 3307 in the LMS network namespace. It never
+uses the live database credentials or live database name. It stops if port 3307
+is occupied. Its cleanup removes only its own temporary container and volume.
+The SQLite skips must run as passing tests on MySQL.
+
+The following read-only probes show the currently installed package, route
+registration, native author roles, course-creation API, and Tutor source mounts.
+An old installed image will correctly report the new routes as not installed.
+Use those outputs to determine the actual image/source installation path before
+building and migrating. Do not pip-install into a running production container.
+
+After a verified image deployment
+---------------------------------
+1. Apply the cba_learning_credits migrations once to the shared LMS/CMS SQL DB.
+2. Collect static files so the Studio activity-row JavaScript is available.
+3. Verify the CMS /cba/learning-credits/ course picker and LMS credit record page.
+4. Apply catalog_extensions migrations 0008 and 0009 to Discovery. A full native
+   Discovery test run and migration plan review are still required before this.
+5. Keep credit events disabled until the pilot below passes. The queue command
+   process_cba_credit_queue must be scheduled in the deployed LMS environment;
+   this change does not silently add a cron job or Celery schedule.
+
+Choose one representative draft course first
+---------------------------------------------
+The current source exports contain course-v1:ERPI+REG00M01C01+2027. Use the actual
+uploaded source filename and an existing active Django staff author account.
+The command validates by default; it does not create anything without --apply.
+
+    python manage.py cms import_cba_studio_courses /tmp/ERPI_catalog_v1.7.json \
+      --author AUTHOR_USERNAME --course-key course-v1:ERPI+REG00M01C01+2027
+
+After that validation and installed-route checks pass, repeat with --apply to
+create a private invitation-only shell, hidden from the native catalog, and a
+draft credit plan. The importer creates no lessons, no assessments, no learners,
+and no learner awards. Existing courses and existing plans are left unchanged.
+MongoDB course creation and SQL plan creation are not a cross-database atomic
+transaction; an interrupted run may leave a shell. Re-running resumes without
+replacing existing course content.
+
+If course content is supplied separately as OLX, use its normal Studio content
+import first, then map just the credit plan:
+
+    python manage.py cms import_cba_credit_plans /tmp/ERPI_catalog_v1.7.json \
+      --course-key course-v1:ERPI+REG00M01C01+2027 --validate-only
+
+Repeat without --validate-only to create a draft. Changes to an existing draft
+require explicit --update-drafts. Approved plans are never overwritten.
+
+Representative workflow acceptance gate
+----------------------------------------
+- Load the actual lesson and assessment content. The catalog JSON contains
+  descriptions/syllabi, not an executable OLX course. A shell is not a completed
+  instructional course.
+- In Studio learning credits, enter the approved eligible activity allocation,
+  IDP reference and learning outcomes; select real activity blocks and save each
+  passing/participation requirement. Do not substitute test values for the IDP.
+- Preview the calculation and approve the plan with an authorized approver.
+- Configure the explicit course-to-plan version for NEW enrollments, enable
+  events in the verified test environment, and use a dedicated learner account.
+- Complete the real required activities and earn a current native passing grade.
+- Run the queue processor and verify one persisted award, its evidence snapshot,
+  original bound plan, and the learner's private HTML/JSON credit record.
+- Verify that failing/incomplete work awards nothing and another user cannot
+  retrieve this learner's record. Reprocessing must not create another award.
+- Do not create the pilot outcome by manually inserting completion/grade rows.
+
+Discovery and Wagtail hand-off
+-------------------------------
+Catalog microcourse and program responses now include learning_credits:
+status, version, basis, policy_version, activity_minutes, eligible_minutes,
+pdu and ceu. Values are decimal strings; pending/unapproved public credits are
+null. Raw authoring evidence, passing rules and approval actor IDs are excluded.
+Existing orgcode and site filtering remains in place.
+
+Export an APPROVED course plan from the Studio page. Copy that trusted staff
+export to Discovery, then validate it with a Discovery operator account that
+has change_microcoursecatalogmetadata permission:
+
+    python manage.py sync_cba_course_credits /tmp/approved-course-credit-plan.json \
+      --partner openedx --operator DISCOVERY_USERNAME --validate-only
+
+Repeat without --validate-only to synchronize credits. This does not publish the
+catalog listing or alter ownership. The synchronization records a source-file
+SHA256, source approval audit and local operator. It refuses conflicting changes
+to an already approved version. The staff export is an administrative input,
+not a cryptographically signed public upload endpoint.
+
+For certificate programs, credit_plan.basis must explicitly be program_total.
+Its activity_minutes already include all required course work and additional
+program work ONCE. Never add member PDUs again to that total. The approval
+command requires complete approved required-member credits and the dedicated
+approve_program_credit_plan permission:
+
+    python manage.py approve_cba_program_credits PROGRAM_CODE --partner openedx \
+      --operator DISCOVERY_APPROVER --validate-only
+
+Repeat without --validate-only only after program review. Programs with electives
+remain blocked until an explicit pathway is defined. Program approval changes
+planned catalog credits, not learner microcourse awards.
+
+Remaining-course bulk draft gate
+---------------------------------
+Only after the representative workflow passes, validate each complete source
+package with import_cba_studio_courses --all-courses. Then repeat with --apply.
+This creates remaining private shells/draft plans, not published courses.
+Import real course content separately and review/approve each plan in Studio.
+Draft catalog metadata import still requires the existing catalog schema; do
+not assume these source exports pass that older importer unchanged.
+
+Source blockers found in the provided exports
+---------------------------------------------
+ERPI_catalog_v1.7.json: 127 course records and 3 programs.
+ERPI_CTG_Aligned_catalog_v1.0.json: 33 course records and 3 programs.
+There are 160 unique course keys, no structured credit_plan objects, and 31
+referenced program microcourses absent from the combined exports (30 AIG course
+records and GENRBT101M01C01). Do not fabricate those records, silently drop their
+memberships, or approve incomplete programs. Some existing Discovery-required
+fields are also missing from source hub/program records. They need explicit
+draft normalization or author completion before the old catalog importer runs.
+
+Not completed on the live server by this implementation
+--------------------------------------------------------
+Docker build, native route/role verification, MySQL execution, Discovery native
+migrations/tests, source repairs, a real learner's completion, dashboard menu
+links, scheduling, live course creation, remaining-course upload and approval.

@@ -27,6 +27,20 @@ class CreditApprovalTests(TestCase):
             instructional_design_reference="IDP-TEST-v1",
             required_block_keys=[
                 "block-v1:CBA+TEST+2027+type@html+block@instruction",
+                "block-v1:CBA+TEST+2027+type@openassessment+block@assignment",
+                "block-v1:CBA+TEST+2027+type@discussion+block@discussion",
+            ],
+            activity_requirements=[
+                {
+                    "kind": "ora_score", "category": "assignments",
+                    "block_key": "block-v1:CBA+TEST+2027+type@openassessment+block@assignment",
+                    "minimum_fraction": "0.80",
+                },
+                {
+                    "kind": "discussion_participation", "category": "discussions",
+                    "block_key": "block-v1:CBA+TEST+2027+type@discussion+block@discussion",
+                    "minimum_posts": 1, "minimum_responses": 1,
+                },
             ],
             learning_outcomes=["Assess a risk scenario."],
         )
@@ -79,6 +93,7 @@ class CreditApprovalTests(TestCase):
 
     def test_invalid_course_key_cannot_be_approved(self):
         self.plan.course_key = "not-a-course-key"
+        self.plan.activity_requirements = []
         self.plan.save()
         with self.assertRaises(ValidationError):
             approve_credit_plan(
