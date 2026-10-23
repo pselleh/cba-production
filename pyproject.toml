@@ -16,6 +16,11 @@ cba-production = "cba_production.plugin"
 
 [project.entry-points."lms.djangoapp"]
 cba-recaptcha = "cba_production.recaptcha.apps:CbaRecaptchaConfig"
+cba-learning-credits = "cba_production.learning_credits.apps:LearningCreditsConfig"
+
+[project.entry-points."cms.djangoapp"]
+cba-learning-credits = "cba_production.learning_credits.apps:LearningCreditsConfig"
+
 
 [tool.setuptools.packages.find]
 include = ["cba_production*"]
