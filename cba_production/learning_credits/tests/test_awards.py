@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from cba_production.learning_credits.awards import award_course_credits
 from cba_production.learning_credits.models import (
-    CourseCreditAward, CourseCreditPlan,
+    CourseCreditAward, CourseCreditPlan, CourseCreditPlanBinding,
 )
 
 
@@ -35,6 +35,12 @@ class CreditAwardServiceTests(TestCase):
             ],
             approved_by=self.approver,
             approved_at=timezone.now(),
+        )
+        self.binding = CourseCreditPlanBinding.objects.create(
+            learner=self.learner,
+            plan=self.plan,
+            course_key=self.plan.course_key,
+            plan_snapshot=self.plan.snapshot,
         )
         self.grade = patch(
             "cba_production.learning_credits.awards.currently_passing",
@@ -125,9 +131,19 @@ class CreditAwardServiceTests(TestCase):
                     approved_by=self.approver,
                     approved_at=timezone.now(),
                 )
+                activity_learner = get_user_model().objects.create_user(
+                    username="activity-learner-" + category,
+                    password=None,
+                )
+                CourseCreditPlanBinding.objects.create(
+                    learner=activity_learner,
+                    plan=plan,
+                    course_key=plan.course_key,
+                    plan_snapshot=plan.snapshot,
+                )
                 with self.assertRaises(ValidationError):
                     award_course_credits(
-                        learner=self.learner, plan_id=plan.pk,
+                        learner=activity_learner, plan_id=plan.pk,
                     )
         self.assertFalse(CourseCreditAward.objects.exists())
 
@@ -147,3 +163,20 @@ class CreditAwardServiceTests(TestCase):
         self.assertTrue(created)
         award.refresh_from_db()
         self.assertEqual(award.activity_evidence, evidence)
+
+    def test_unbound_learner_cannot_receive_award(self):
+        self.binding.delete()
+        with self.assertRaises(ValidationError):
+            self.award()
+        self.assertFalse(CourseCreditAward.objects.exists())
+
+    def test_award_cannot_use_a_different_plan_version(self):
+        replacement = CourseCreditPlan.objects.get(pk=self.plan.pk)
+        replacement.pk = None
+        replacement.version = 2
+        replacement.save()
+        with self.assertRaises(ValidationError):
+            award_course_credits(
+                learner=self.learner, plan_id=replacement.pk,
+            )
+        self.assertFalse(CourseCreditAward.objects.exists())

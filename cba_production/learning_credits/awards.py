@@ -8,7 +8,9 @@ from django.utils import timezone
 from .activity_evidence import collect_activity_evidence
 from .completion import missing_required_blocks
 from .grades import currently_passing
-from .models import CourseCreditAward, CourseCreditPlan
+from .models import (
+    CourseCreditAward, CourseCreditPlan, CourseCreditPlanBinding,
+)
 
 
 def award_course_credits(*, learner, plan_id, source_event_id=""):
@@ -40,6 +42,17 @@ def award_course_credits(*, learner, plan_id, source_event_id=""):
             raise ValidationError("Credits require an approved plan.")
 
         snapshot = plan.snapshot
+        binding = CourseCreditPlanBinding.objects.filter(
+            learner=stored_learner, course_key=plan.course_key,
+        ).first()
+        if binding is None or binding.plan_id != plan.pk:
+            raise ValidationError(
+                "The learner must be bound to this approved plan version."
+            )
+        if binding.plan_snapshot != snapshot:
+            raise ValidationError(
+                "The approved plan differs from the learner's bound snapshot."
+            )
 
         if not currently_passing(
             learner=stored_learner, course_key=plan.course_key

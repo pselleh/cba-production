@@ -245,3 +245,50 @@ class CourseCreditAward(models.Model):
             )
         self.full_clean()
         return super().save(*args, **kwargs)
+
+
+class CourseCreditPlanBinding(models.Model):
+    learner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="cba_credit_plan_bindings",
+    )
+    plan = models.ForeignKey(
+        CourseCreditPlan,
+        on_delete=models.PROTECT,
+        related_name="learner_bindings",
+    )
+    course_key = models.CharField(max_length=255, db_index=True)
+    plan_snapshot = models.JSONField()
+    source_event_id = models.CharField(max_length=255, blank=True)
+    bound_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["learner", "course_key"],
+                name="cba_unique_learner_course_plan",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.plan_id is None:
+            return
+        if self.plan.status != CourseCreditPlan.Status.APPROVED:
+            raise ValidationError("Binding requires an approved plan.")
+        if (
+            self.course_key != self.plan.course_key
+            or self.plan_snapshot != self.plan.snapshot
+        ):
+            raise ValidationError(
+                "Binding must match the approved course credit plan."
+            )
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise ValidationError(
+                "Plan bindings cannot be edited through save()."
+            )
+        self.full_clean()
+        return super().save(*args, **kwargs)
