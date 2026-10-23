@@ -25,6 +25,9 @@ class CreditApprovalTests(TestCase):
             discussions_minutes=5,
             other_minutes=0,
             instructional_design_reference="IDP-TEST-v1",
+            required_block_keys=[
+                "block-v1:CBA+TEST+2027+type@html+block@instruction",
+            ],
             learning_outcomes=["Assess a risk scenario."],
         )
 

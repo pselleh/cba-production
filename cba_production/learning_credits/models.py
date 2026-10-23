@@ -2,6 +2,9 @@
 
 from copy import deepcopy
 
+from opaque_keys import InvalidKeyError
+from opaque_keys.edx.keys import UsageKey
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -33,6 +36,7 @@ class CourseCreditPlan(models.Model):
     other_minutes = models.PositiveIntegerField(null=True, blank=True)
     instructional_design_reference = models.CharField(max_length=1024, blank=True)
     learning_outcomes = models.JSONField(default=list, blank=True)
+    required_block_keys = models.JSONField(default=list, blank=True)
     policy_version = models.CharField(
         max_length=64, default=CREDIT_POLICY_VERSION,
     )
@@ -76,6 +80,7 @@ class CourseCreditPlan(models.Model):
             "version": self.version,
             "policy_version": self.policy_version,
             "activity_minutes": deepcopy(self.activity_minutes),
+            "required_block_keys": deepcopy(self.required_block_keys),
             "instructional_design_reference": self.instructional_design_reference,
             "learning_outcomes": deepcopy(self.learning_outcomes),
             "approved_by_id": self.approved_by_id,
@@ -97,8 +102,38 @@ class CourseCreditPlan(models.Model):
                 "learning_outcomes": "Use an array of nonempty outcome strings.",
             })
 
+        if not isinstance(self.required_block_keys, list) or any(
+            not isinstance(value, str) or not value.strip()
+            for value in self.required_block_keys
+        ):
+            raise ValidationError({
+                "required_block_keys": "Use an array of nonempty block keys.",
+            })
+        if len(self.required_block_keys) != len(set(self.required_block_keys)):
+            raise ValidationError({
+                "required_block_keys": "Duplicate required blocks are not allowed.",
+            })
+
         if self.status == self.Status.APPROVED:
             errors = {}
+            if not self.required_block_keys:
+                errors["required_block_keys"] = (
+                    "Approval requires explicit completion requirements."
+                )
+            for value in self.required_block_keys:
+                try:
+                    key = UsageKey.from_string(value)
+                    valid = (
+                        str(key) == value
+                        and str(key.course_key) == self.course_key
+                    )
+                except (InvalidKeyError, TypeError, ValueError, AttributeError):
+                    valid = False
+                if not valid:
+                    errors["required_block_keys"] = (
+                        "Required blocks must be canonical keys from this course run."
+                    )
+                    break
             if totals.eligible_minutes is None or totals.eligible_minutes <= 0:
                 errors["instruction_minutes"] = (
                     "Approval requires complete activity times and a positive total."
