@@ -35,7 +35,7 @@ def _course_activities(key):
         raise Http404("Course not found.")
     activities = []
     for block in store.get_items(key):
-        if block.category in {"course", "chapter", "sequential", "vertical"}:
+        if block.category in {"course", "chapter", "sequential", "vertical", "about"}:
             continue
         activities.append({
             "key": str(block.location), "type": block.category,
@@ -91,6 +91,10 @@ def course_credit_plans(request, course_key):
     plans = CourseCreditPlan.objects.filter(course_key=course_key).order_by("-version")
     next_version = (plans.aggregate(value=Max("version"))["value"] or 0) + 1
     selected = request.POST.get("plan_id") if request.method == "POST" else request.GET.get("edit")
+    if request.method == "GET" and not selected and not request.GET.get("copy"):
+        default_plan = plans.filter(status=CourseCreditPlan.Status.DRAFT).first() or plans.first()
+        if default_plan is not None:
+            selected = default_plan.pk
     instance = CourseCreditPlan(course_key=course_key, version=next_version)
     if selected:
         try:

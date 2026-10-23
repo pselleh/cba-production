@@ -66,6 +66,14 @@ class StudioCreditControlsTests(TestCase):
         ))
         self.user = get_user_model().objects.get(pk=self.user.pk)
 
+    def test_course_link_opens_saved_draft_instead_of_empty_next_version(self):
+        plan = self.save_draft(instruction_minutes="60", assessments_minutes="15")
+        response = studio_views.course_credit_plans(self.request(), self.course)
+        self.assertContains(response, f'name="plan_id" value="{plan.pk}"')
+        self.assertContains(response, '1.2500')
+        self.assertContains(response, '0.1250')
+        self.assertEqual(CourseCreditPlan.objects.count(), 1)
+
     def test_page_lists_real_course_activities(self):
         response = studio_views.course_credit_plans(self.request(), self.course)
         self.assertContains(response, "Risk assignment")
