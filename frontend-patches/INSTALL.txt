@@ -1,18 +1,5 @@
-Studio Settings menu integration
-
-Target: openedx/frontend-app-authoring release/ulmo, src/header/hooks.jsx.
-Adds PDU / CEU credits immediately after Schedule & Details, using the configured
-STUDIO_BASE_URL and URL-encoded current course key. Backend authorization remains
-in force. No credit data, approval, or visibility is modified.
-
-Apply authoring-settings-learning-credits.patch to the actual authoring source
-used by the MFE build, using git apply --check before git apply. Preserve the
-patch in pselleh/cba-production and integrate its application into the canonical
-MFE source/build configuration. Do not edit compiled JavaScript in a live image.
-Rebuild/recreate the MFE service after applying. Rebuilding openedx alone does
-not update the React Settings menu.
-
-Validation: patch whitespace check passed; Node URL tests cover backend origin,
-trailing slash, and opaque course-key encoding. React hook tests were added to
-the patch but have NOT run here because frontend dependencies are not installed.
-Run the target checkout's header/hooks.test.js suite before its image build.
+Target: frontend-app-authoring release/verawood.1 (3fe1f4f).
+The previous Ulmo patch is replaced. cba-credit-menu.yml embeds this patch in a Tutor build hook.
+Copy the YAML to tutor plugins printroot, enable cba-credit-menu, regenerate Tutor configuration, then build a candidate MFE image.
+Link is gated by the existing canViewScheduleAndDetails permission. Backend course authorization still applies.
+Patch whitespace check and application check against pristine Verawood source passed. React tests and image build have not run locally.

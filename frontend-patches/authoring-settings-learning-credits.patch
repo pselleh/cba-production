@@ -1,62 +1,24 @@
-diff --git a/src/header/hooks.jsx b/src/header/hooks.jsx
-index 80389e3..7db713e 100644
---- a/src/header/hooks.jsx
-+++ b/src/header/hooks.jsx
-@@ -61,6 +61,10 @@ export const useSettingMenuItems = courseId => {
-       href: waffleFlags.useNewScheduleDetailsPage ? `/course/${courseId}/settings/details` : `${studioBaseUrl}/settings/details/${courseId}`,
-       title: intl.formatMessage(messages['header.links.scheduleAndDetails']),
-     },
-+    {
-+      href: `${studioBaseUrl.replace(/\/$/, '')}/cba/learning-credits/course/${encodeURIComponent(courseId)}/`,
-+      title: intl.formatMessage(messages['header.links.learningCredits']),
-+    },
-     {
-       href: waffleFlags.useNewGradingPage ? `/course/${courseId}/settings/grading` : `${studioBaseUrl}/settings/grading/${courseId}`,
-       title: intl.formatMessage(messages['header.links.grading']),
-diff --git a/src/header/hooks.test.js b/src/header/hooks.test.js
-index 176c090..60fc5f5 100644
---- a/src/header/hooks.test.js
-+++ b/src/header/hooks.test.js
-@@ -65,13 +65,25 @@ describe('header utils', () => {
-       });
-     });
- 
-+    it('links credits to the current course on the Studio backend', () => {
-+      setConfig({ ...getConfig(), STUDIO_BASE_URL: 'https://studio.example.org/' });
-+      const courseId = 'course-v1:ERPI+REG00M01C01+2027';
-+      const items = renderHook(() => useSettingMenuItems(courseId)).result.current;
-+      const credits = items.filter(item => item.title === 'PDU / CEU credits');
-+      expect(credits).toHaveLength(1);
-+      expect(credits[0].href).toBe(
-+        `https://studio.example.org/cba/learning-credits/course/${encodeURIComponent(courseId)}/`,
-+      );
-+      expect(items.indexOf(credits[0])).toBe(1);
-+    });
-+
-     it('when certificate page enabled should include certificates option', () => {
-       setConfig({
-         ...getConfig(),
-         ENABLE_CERTIFICATE_PAGE: 'true',
-       });
-       const actualItems = renderHook(() => useSettingMenuItems('course-123')).result.current;
--      expect(actualItems).toHaveLength(6);
-+      expect(actualItems).toHaveLength(7);
-     });
-     it('when certificate page disabled should not include certificates option', () => {
-       setConfig({
-@@ -79,7 +91,7 @@ describe('header utils', () => {
-         ENABLE_CERTIFICATE_PAGE: 'false',
-       });
-       const actualItems = renderHook(() => useSettingMenuItems('course-123')).result.current;
--      expect(actualItems).toHaveLength(5);
-+      expect(actualItems).toHaveLength(6);
-     });
-     it('when user has access to advanced settings should include advanced settings option', () => {
-       const actualItemsTitle = renderHook(() => useSettingMenuItems('course-123')).result.current.map((item) => item.title);
-diff --git a/src/header/messages.js b/src/header/messages.js
-index 0577c7b..35d0330 100644
---- a/src/header/messages.js
-+++ b/src/header/messages.js
+diff --git a/src/header/hooks.tsx b/src/header/hooks.tsx
+index 3ea670e..b17c7a8 100644
+--- a/src/header/hooks.tsx
++++ b/src/header/hooks.tsx
+@@ -108,6 +108,12 @@ export const useSettingMenuItems = (courseId: string) => {
+         title: intl.formatMessage(messages['header.links.scheduleAndDetails']),
+       }]
+       : []),
++    ...(perms.canViewScheduleAndDetails
++      ? [{
++        href: `${getConfig().STUDIO_BASE_URL.replace(/\/$/, '')}/cba/learning-credits/course/${encodeURIComponent(courseId)}/`,
++        title: intl.formatMessage(messages['header.links.learningCredits']),
++      }]
++      : []),
+     ...(perms.canViewGradingSettings
+       ? [{
+         href: `/course/${courseId}/settings/grading`,
+diff --git a/src/header/messages.ts b/src/header/messages.ts
+index 7f680b6..beb8201 100644
+--- a/src/header/messages.ts
++++ b/src/header/messages.ts
 @@ -56,6 +56,11 @@ const messages = defineMessages({
      defaultMessage: 'Schedule & Details',
      description: 'Link to Studio Schedule & Details page',
@@ -64,7 +26,7 @@ index 0577c7b..35d0330 100644
 +  'header.links.learningCredits': {
 +    id: 'header.links.learningCredits',
 +    defaultMessage: 'PDU / CEU credits',
-+    description: 'Link to the current course learning-credit plan in Studio',
++    description: 'Open the current course learning-credit plan in Studio',
 +  },
    'header.links.grading': {
      id: 'header.links.grading',
